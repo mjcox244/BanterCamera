@@ -158,6 +158,14 @@ namespace BanterCamera
         public bool SmoothRotation;
         public StereoTargetEyeMask OutPutEyes = StereoTargetEyeMask.None;
 
+        public void DestroyCamera()
+        {
+            if (SpectatorCam != null)
+            {
+                try { Object.Destroy(SpectatorCam); } catch { } //Try and Destroy the Camera
+            }
+        }
+
         public void CreateCamera()
         {
             if (SpectatorCam != null)
