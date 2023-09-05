@@ -109,6 +109,7 @@ namespace BanterCamera
         void OnLoadStart()
         {
             ReloadConfig();
+            cameraStuff.DestroyCamera();
         }
 
         void ReloadConfig()
