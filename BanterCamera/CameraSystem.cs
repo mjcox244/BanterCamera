@@ -24,14 +24,8 @@ namespace BanterCamera
         public override void OnInitializeMelon()
         {
 
-            if (UnityEngine.XR.XRSettings.enabled)
-            {
-                LoggerInstance.Msg("VR is enabled");
-            }
-            else
-            {
-                LoggerInstance.Msg("VR is not enabled");
-            }
+            if (UnityEngine.XR.XRSettings.enabled) LoggerInstance.Msg("VR is enabled");
+            else LoggerInstance.Msg("VR is not enabled");
 
             //Add all the values to the config file if not allready present
             ConfigCategory = MelonPreferences.CreateCategory("BanterCamera");
@@ -55,6 +49,7 @@ namespace BanterCamera
             ConfigDebugCategory.SetFilePath("UserData/BanterCamera.cfg");
             EnableInDesktop = ConfigDebugCategory.CreateEntry<bool>("Enable in Desktop", false);
             AllowQuestSupport = ConfigDebugCategory.CreateEntry<bool>("Allow Quest Support", true);
+            ConfigDebugCategory.SaveToFile();
 
             IsQuest = MelonUtils.CurrentPlatform == (MelonPlatformAttribute.CompatiblePlatforms)3; //This will be true if using LemonLoader / Android
             if (IsQuest && AllowQuestSupport.Value)
@@ -70,6 +65,7 @@ namespace BanterCamera
         public override void OnApplicationQuit()
         {
             ConfigCategory.SaveToFile();
+            ConfigDebugCategory.SaveToFile();
         }
         public override void OnUpdate()
         {
@@ -107,7 +103,7 @@ namespace BanterCamera
         {
             if (SpectatorCam != null)
             {
-                try{ Object.Destroy(SpectatorCam); } catch { } //Try and Destroy the Camera if its allready in the scene.
+                try{ Object.Destroy(SpectatorCam); } catch { } //Try and Destroy the Camera
             }
             CameraPosition = PlayerHead.position; CameraRot = PlayerHead.rotation; //Reset Positions and rotations.
 
@@ -121,68 +117,35 @@ namespace BanterCamera
             //Change the setting of the camera conponant
             cameraComponent.farClipPlane = VRMainCam.farClipPlane;
             cameraComponent.nearClipPlane = VRMainCam.nearClipPlane;
-            cameraComponent.depth = 2;
+            cameraComponent.depth = 10; //This camera will be rendered in front of the main camera.
             cameraComponent.stereoTargetEye = OutPutEyes;
-            cameraComponent.fieldOfView = 90;
+            if (UnityEngine.XR.XRSettings.enabled) cameraComponent.fieldOfView = 90;
+            else cameraComponent.fieldOfView = VRMainCam.fieldOfView;
             cameraComponent.allowDynamicResolution = true;
-            cameraComponent.ResetAspect();
+            cameraComponent.depthTextureMode = VRMainCam.depthTextureMode;
+            cameraComponent.ResetAspect(); //Fix the Apect ratio of the camera due to the camera normally copying from the VR headset.
 
-            if (cullingMask == 0) //If culling mask is 0, inherit it from the main camera
-            {
-                cameraComponent.cullingMask = VRMainCam.cullingMask;
-            }
-            else if (cullingMask < 0) //If the culling mask is negative, subtract from it, this should really be an xor
-            {
-                cameraComponent.cullingMask = VRMainCam.cullingMask + cullingMask;
-            }
-            else //If culling mask is grater than 0, use the one given
-            {
-                cameraComponent.cullingMask = cullingMask;
-            }
-           
-            
-            
-
+            if (cullingMask == 0) cameraComponent.cullingMask = VRMainCam.cullingMask; //If culling mask is 0, inherit it from the main camera
+            else if (cullingMask < 0) cameraComponent.cullingMask = VRMainCam.cullingMask + cullingMask; //If the culling mask is negative, subtract from it, this should really be an xor
+            else cameraComponent.cullingMask = cullingMask; //If culling mask is grater than 0, use the one given
         }
 
         public void SmoothMoveCamera(float deltaTime)
         {
-            if (SpectatorCam == null)
-            {
-                return;
-            }
+            if (SpectatorCam == null) return;           
 
             //Establish vars
             Vector3 TargetPos = PlayerHead.transform.position;
             Quaternion TargetRot = PlayerHead.transform.rotation;
             float lerpPoint = deltaTime * smoothSpeed; //yep, this is a smoothed time method of smooth cam instad of the proper method.
+            Mathf.Clamp(lerpPoint, 0, 1);
 
-            if (lerpPoint > 1)
-            {
-                lerpPoint = 1;
-            }
-            else if (lerpPoint < 0)
-            {
-                lerpPoint = 0;
-            }
 
-            if(SmoothPosition)
-            {
-                CameraPosition = Vector3.Lerp(CameraPosition, TargetPos, lerpPoint);
-            }
-            else
-            {
-                CameraPosition = TargetPos;
-            }
+            if(SmoothPosition) CameraPosition = Vector3.Lerp(CameraPosition, TargetPos, lerpPoint);
+            else CameraPosition = TargetPos;
             
-            if(SmoothRotation)
-            {
-                CameraRot = Quaternion.Lerp(CameraRot, TargetRot, lerpPoint);
-            }
-            else
-            {
-                CameraRot = TargetRot;
-            }
+            if(SmoothRotation) CameraRot = Quaternion.Lerp(CameraRot, TargetRot, lerpPoint);
+            else CameraRot = TargetRot;
             
 
             SpectatorCam.transform.position = CameraPosition;

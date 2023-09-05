@@ -39,5 +39,5 @@ using MelonLoader;
 [assembly: AssemblyFileVersion("1.0.0.0")]
 
 
-[assembly: MelonInfo(typeof(CameraMod), "Banter Camera", "0.2", "mjcox24")]
+[assembly: MelonInfo(typeof(CameraMod), "Banter Camera", "0.25", "mjcox24")]
 [assembly: MelonGame("SideQuest", "Banter")]
