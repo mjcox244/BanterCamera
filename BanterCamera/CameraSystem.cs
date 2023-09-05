@@ -83,16 +83,22 @@ namespace BanterCamera
                 lastSlowUpdateTime = Time.time;
             }
 
-
-            if (LoadScreen.active && !IsLoading) //We have just entered a load screen
+            if (LoadScreen != null)
             {
-                IsLoading = true;
-                OnLoadStart();
+                if (LoadScreen.active && !IsLoading) //We have just entered a load screen
+                {
+                    IsLoading = true;
+                    OnLoadStart();
+                }
+                else if (!LoadScreen.active && IsLoading)
+                {
+                    IsLoading = false;
+                    OnLoadDone();
+                }
             }
-            else if (!LoadScreen.active && IsLoading)
-            {
-                IsLoading = false;
-                OnLoadDone();
+            else {
+                LoadScreen = GameObject.Find("/HexaPlayer/HexaBody/Loading/LoadingBar");
+                LoggerInstance.Msg("Load Screen lost, finding it again");
             }
         }
 
