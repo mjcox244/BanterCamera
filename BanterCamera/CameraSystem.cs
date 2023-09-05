@@ -8,6 +8,8 @@ namespace BanterCamera
     public class CameraMod : MelonMod
     {
         public bool IsQuest;
+        public bool IsLoading;
+        public GameObject LoadScreen;
         static CameraSystem cameraStuff = new CameraSystem();
         private float lastSlowUpdateTime;
 
@@ -39,11 +41,7 @@ namespace BanterCamera
             CullMask = ConfigCategory.CreateEntry<int>("Culling Mask", 0);
             ConfigCategory.SaveToFile();
 
-            //Apply the values ither just generated or stored in config to the main cameraStuff object
-            cameraStuff.smoothSpeed = SmoothingSpeed.Value;
-            cameraStuff.SmoothPosition = Smoothpos.Value;
-            cameraStuff.SmoothRotation = SmoothRot.Value;
-            cameraStuff.cullingMask = CullMask.Value;
+
 
             //Create the Debug Catigory for enableing experimental/ debug tools
             //This includes Flatscreen for testing and Quest support
@@ -62,6 +60,8 @@ namespace BanterCamera
             {
                 Enabled.Value = false;
             }
+
+            LoadScreen = GameObject.Find("/HexaPlayer/HexaBody/Loading/LoadingBar");
         }
 
         public override void OnApplicationQuit()
@@ -76,12 +76,51 @@ namespace BanterCamera
                 cameraStuff.SmoothMoveCamera(Time.deltaTime);
             }
 
-            if (Time.time - lastSlowUpdateTime > 0.25f) //only apply at 4hz, this is an optimization.
+            if (Time.time - lastSlowUpdateTime > 1f) //only apply at 1hz, this is an optimization.
             {
                 // do something here
-                FixBanterLayers();
+                FixBanterLayers(); 
                 lastSlowUpdateTime = Time.time;
             }
+
+
+            if (LoadScreen.active && !IsLoading) //We have just entered a load screen
+            {
+                IsLoading = true;
+                OnLoadStart();
+            }
+            else if (!LoadScreen.active && IsLoading)
+            {
+                IsLoading = false;
+                OnLoadDone();
+            }
+        }
+
+        void OnLoadDone()
+        {
+            if ((UnityEngine.XR.XRSettings.enabled || EnableInDesktop.Value) && Enabled.Value)
+            {
+                GameObject PlayerHead = Camera.main.gameObject; //Find the gameobject of the main camera
+                cameraStuff.PlayerHead = PlayerHead.transform; //Get the transform of the target
+                cameraStuff.VRMainCam = Camera.main; //send in the main camera for refrence for things like culling mask
+                cameraStuff.CreateCamera(); //Make the new camera
+            }
+        }
+        void OnLoadStart()
+        {
+            ReloadConfig();
+        }
+
+        void ReloadConfig()
+        {
+            ConfigDebugCategory.LoadFromFile();
+            ConfigCategory.LoadFromFile();
+
+            //Apply the values ither just generated or stored in config to the main cameraStuff object
+            cameraStuff.smoothSpeed = SmoothingSpeed.Value;
+            cameraStuff.SmoothPosition = Smoothpos.Value;
+            cameraStuff.SmoothRotation = SmoothRot.Value;
+            cameraStuff.cullingMask = CullMask.Value;
         }
         public override void OnSceneWasInitialized(int buildIndex, string sceneName) 
         {
