@@ -1,6 +1,7 @@
 ﻿using MelonLoader;
 using UnityEngine;
 using System.Reflection;
+using System.Linq;
 
 namespace BanterCamera
 {
@@ -8,6 +9,7 @@ namespace BanterCamera
     {
         public bool IsQuest;
         static CameraSystem cameraStuff = new CameraSystem();
+        private float lastSlowUpdateTime;
 
         private MelonPreferences_Category ConfigCategory;
         private MelonPreferences_Entry<bool> Enabled;
@@ -73,6 +75,13 @@ namespace BanterCamera
             {
                 cameraStuff.SmoothMoveCamera(Time.deltaTime);
             }
+
+            if (Time.time - lastSlowUpdateTime > 0.25f) //only apply at 4hz, this is an optimization.
+            {
+                // do something here
+                FixBanterLayers();
+                lastSlowUpdateTime = Time.time;
+            }
         }
         public override void OnSceneWasInitialized(int buildIndex, string sceneName) 
         {
@@ -82,6 +91,17 @@ namespace BanterCamera
                 cameraStuff.PlayerHead = PlayerHead.transform; //Get the transform of the target
                 cameraStuff.VRMainCam = Camera.main; //send in the main camera for refrence for things like culling mask
                 cameraStuff.CreateCamera(); //Make the new camera
+            }
+        }
+        
+        private void FixBanterLayers()
+        {
+            GameObject[] allGameObjects = GameObject.FindObjectsOfType<GameObject>(); // find all game objects in the scene
+            GameObject[] rendererAvatars = allGameObjects.Where(g => g.name.Contains("Renderer_Avatar")).ToArray(); // filter by name
+            foreach (GameObject rendererAvatar in rendererAvatars) //Grab the mesh renderers for remote players
+            {
+                rendererAvatar.layer = LayerMask.NameToLayer("RemoteAvatar"); // change the layer to RemoteAvi
+
             }
         }
 
